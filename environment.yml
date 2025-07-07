@@ -1,0 +1,35 @@
+name: customer-churn-env
+channels:
+  - conda-forge  # Prioritize newer packages
+  - defaults     # Fallback to stable defaults
+dependencies:
+  # Core (pinned to major versions for stability)
+  - python~=3.9.0  # Any 3.9.x (avoids Python 3.10+ potential breaks)
+  - numpy>=1.21,<2.0
+  - pandas>=1.3,<2.0  # Stay in pandas 1.x ecosystem
+  - scipy>=1.7
+
+  # Machine Learning (minor version flexibility)
+  - scikit-learn~=1.0.0  # Any 1.0.x (avoids 2.0+ breaking changes)
+  - xgboost>=1.5,<2.0
+  - lightgbm>=3.3,<4.0
+  - catboost>=1.0,<2.0
+  - imbalanced-learn~=0.9.0
+
+  # Visualization (flexible on minor versions)
+  - matplotlib>=3.5,<4.0
+  - seaborn>=0.11,<0.12  # Seaborn often changes APIs in minor versions
+  - plotly>=5.0,<6.0
+
+  # Utilities (flexible)
+  - jupyter>=1.0
+  - jupyterlab>=3.0
+  - ipython>=8.0
+  - pip>=21.3
+
+  - pip:
+    - mlflow>=1.24
+    - evidently>=0.1.40 # for data drift monitoring  
+      
+  # Critical packages with exact pins (if needed)
+  # - shap==0.40.0 
