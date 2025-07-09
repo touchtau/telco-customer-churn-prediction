@@ -18,7 +18,7 @@ dependencies:
 
   # Visualization (flexible on minor versions)
   - matplotlib>=3.5,<4.0
-  - seaborn>=0.11,<0.12  # Seaborn often changes APIs in minor versions
+  - seaborn>=0.12  # Seaborn often changes APIs in minor versions
   - plotly>=5.0,<6.0
 
   # Utilities (flexible)
