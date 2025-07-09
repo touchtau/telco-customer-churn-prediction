@@ -90,4 +90,29 @@ def clean_preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+def save_processed_data(X, y, folder='../data/processed/', prefix='df_encoded_resampled'):
+    """
+    Save processed dataset (X and y combined) to CSV with current date.
+    
+    Parameters:
+    - X: pd.DataFrame, feature matrix
+    - y: pd.Series or np.array, target variable
+    - folder: target folder to save file
+    - prefix: filename prefix
+    
+    Returns:
+    - filename: full path of saved file
+    """
+    # Combine X and y
+    df_final = pd.DataFrame(X, columns=X.columns)
+    df_final['Churn'] = y
+
+    
+    filename = f"{folder}.csv"
+
+    # Save to CSV
+    df_final.to_csv(filename, index=False)
+    print(f"✅ Saved processed data to: {filename}")
+    
+    return filename
 

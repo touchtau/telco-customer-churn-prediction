@@ -1,92 +1,143 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 from scipy import stats
-from typing import Tuple, List, Union
 
-def descriptive_statistics(series: pd.Series) -> dict:
-    """
-    Calculate mean, median, mode, std, and variance for a numeric pandas Series.
-    """
-    return {
-        'mean': series.mean(),
-        'median': series.median(),
-        'mode': series.mode().iloc[0] if not series.mode().empty else np.nan,
-        'std': series.std(),
-        'variance': series.var()
-    }
+sns.set(style='whitegrid')
 
-def confidence_interval_mean(series: pd.Series, confidence: float = 0.95) -> Tuple[float, float]:
-    """
-    Calculate confidence interval for the mean of a numeric pandas Series.
-    """
-    n = series.dropna().shape[0]
-    mean = series.mean()
-    stderr = stats.sem(series, nan_policy='omit')
-    h = stderr * stats.t.ppf((1 + confidence) / 2., n-1)
-    return mean - h, mean + h
+### --- DESCRIPTIVE STATS & VISUALS ---
 
-def perform_ttest(series1: pd.Series, series2: pd.Series, equal_var: bool = False) -> Tuple[float, float]:
+def describe_numeric_column(df, column):
     """
-    Perform two-sample t-test.
-    Returns: t-statistic, p-value
+    Print and return descriptive statistics for a numeric column.
     """
-    t_stat, p_val = stats.ttest_ind(series1, series2, equal_var=equal_var, nan_policy='omit')
-    return t_stat, p_val
+    desc = df[column].describe()
+    print(f"\nDescriptive statistics for {column}:\n{desc}")
+    return desc
 
-def perform_anova(*groups: List[pd.Series]) -> Tuple[float, float]:
+def plot_distribution(df, column):
     """
-    Perform one-way ANOVA test on multiple groups.
-    Returns: F-statistic, p-value
+    Plot histogram and KDE for a numeric column.
     """
-    f_stat, p_val = stats.f_oneway(*groups)
-    return f_stat, p_val
+    plt.figure(figsize=(8,4))
+    sns.histplot(df[column], kde=True, color='teal', bins=30)
+    plt.title(f'Distribution of {column}')
+    plt.xlabel(column)
+    plt.ylabel('Frequency')
+    plt.show()
 
-def perform_chi2_test(contingency_table: pd.DataFrame) -> Tuple[float, float, int, np.ndarray]:
+def plot_boxplot_by_target(df, column, target):
     """
-    Perform Chi-squared test of independence.
-    contingency_table: typically from pd.crosstab.
-    Returns: chi2-statistic, p-value, degrees of freedom, expected frequencies
+    Boxplot of a numeric column grouped by target variable (e.g., Churn).
+    """
+    plt.figure(figsize=(6,4))
+    sns.boxplot(x=target, y=column, data=df, palette='pastel')
+    plt.title(f'{column} by {target}')
+    plt.show()
+
+### --- CENTRAL LIMIT THEOREM (CLT) SAMPLING ---
+
+def clt_sampling_distribution(df, column, sample_size=50, n_samples=1000, plot=True):
+    """
+    Demonstrate CLT: draw many samples and plot mean distribution.
+    """
+    sample_means = []
+    for _ in range(n_samples):
+        sample = df[column].dropna().sample(sample_size, replace=True)
+        sample_means.append(sample.mean())
+    
+    if plot:
+        plt.figure(figsize=(8,4))
+        sns.histplot(sample_means, kde=True, color='skyblue', bins=30)
+        plt.title(f'CLT Sampling Distribution of {column} Means (n={sample_size})')
+        plt.xlabel('Sample Mean')
+        plt.ylabel('Frequency')
+        plt.show()
+    
+        _ = sample_means  # keep variable if you need internally
+
+### --- CONFIDENCE INTERVALS & BOOTSTRAPPING ---
+
+def calculate_confidence_interval(data, confidence=0.95):
+    """
+    Calculate confidence interval for mean.
+    """
+    mean = np.mean(data)
+    sem = stats.sem(data, nan_policy='omit')
+    n = len(data)
+    margin = sem * stats.t.ppf((1+confidence)/2., n-1)
+    lower, upper = mean - margin, mean + margin
+    print(f"{int(confidence*100)}% CI for mean: ({lower:.2f}, {upper:.2f})")
+    return (lower, upper)
+
+def bootstrap_confidence_interval(data, n_bootstrap=1000, confidence=0.95, plot=True):
+    """
+    Bootstrap confidence interval for mean.
+    """
+    boot_means = []
+    for _ in range(n_bootstrap):
+        sample = np.random.choice(data.dropna(), size=len(data), replace=True)
+        boot_means.append(np.mean(sample))
+    
+    lower = np.percentile(boot_means, (1-confidence)/2*100)
+    upper = np.percentile(boot_means, (1+(confidence))/2*100)
+    
+    if plot:
+        plt.figure(figsize=(8,4))
+        sns.histplot(boot_means, kde=True, color='orchid', bins=30)
+        plt.title(f'Bootstrap Mean Distribution ({n_bootstrap} resamples)')
+        plt.axvline(lower, color='red', linestyle='--', label=f'{int(confidence*100)}% CI Lower')
+        plt.axvline(upper, color='red', linestyle='--', label='Upper')
+        plt.xlabel('Mean')
+        plt.ylabel('Frequency')
+        plt.legend()
+        plt.show()
+    
+    print(f"{int(confidence*100)}% bootstrap CI: ({lower:.2f}, {upper:.2f})")
+    return (lower, upper)
+
+### --- HYPOTHESIS TESTS ---
+
+def one_sample_ttest(data, popmean):
+    """
+    One-sample t-test against population mean.
+    """
+    t_stat, p_value = stats.ttest_1samp(data, popmean, nan_policy='omit')
+    print(f"One-sample t-test: t={t_stat:.3f}, p={p_value:.3f}")
+    return t_stat, p_value
+
+def two_sample_ttest(data1, data2, equal_var=False):
+    """
+    Independent two-sample t-test.
+    """
+    t_stat, p_value = stats.ttest_ind(data1, data2, equal_var=equal_var, nan_policy='omit')
+    print(f"Two-sample t-test: t={t_stat:.3f}, p={p_value:.3f}")
+    return t_stat, p_value
+
+def chi_squared_test(contingency_table):
+    """
+    Chi-squared test for independence.
+    contingency_table: pd.DataFrame or array-like
     """
     chi2, p, dof, expected = stats.chi2_contingency(contingency_table)
+    print(f"Chi-squared test: chi2={chi2:.3f}, dof={dof}, p={p:.3f}")
     return chi2, p, dof, expected
 
-def central_limit_theorem_sampling(series: pd.Series, sample_size: int, n_samples: int = 1000) -> np.ndarray:
+def anova_test(*groups):
     """
-    Demonstrate CLT by taking many samples and computing sample means.
-    Returns: array of sample means.
+    One-way ANOVA to compare means across multiple groups.
     """
-    sample_means = [
-        series.sample(sample_size, replace=True).mean()
-        for _ in range(n_samples)
-    ]
-    return np.array(sample_means)
+    f_stat, p_value = stats.f_oneway(*groups)
+    print(f"ANOVA: F={f_stat:.3f}, p={p_value:.3f}")
+    return f_stat, p_value
 
-def bootstrap_confidence_interval(series: pd.Series, n_bootstrap: int = 1000, confidence: float = 0.95) -> Tuple[float, float]:
-    """
-    Use bootstrap sampling to compute confidence interval for the mean.
-    """
-    boot_means = [
-        series.sample(frac=1, replace=True).mean()
-        for _ in range(n_bootstrap)
-    ]
-    lower = np.percentile(boot_means, (1 - confidence) / 2 * 100)
-    upper = np.percentile(boot_means, (1 + confidence) / 2 * 100)
-    return lower, upper
+### --- Z-SCORE ---
 
-def calculate_z_score(
-    value_or_series: Union[float, pd.Series],
-    mean: float = None,
-    std: float = None
-) -> Union[float, pd.Series]:
+def calculate_z_score(value, mean, std):
     """
-    Calculate z-score for a single value or for a Series.
-    If mean and std are None and input is Series, will use Series mean and std.
+    Calculate z-score for given value.
     """
-    if isinstance(value_or_series, pd.Series):
-        mu = mean if mean is not None else value_or_series.mean()
-        sigma = std if std is not None else value_or_series.std()
-        return (value_or_series - mu) / sigma
-    else:
-        if mean is None or std is None:
-            raise ValueError("For single value, mean and std must be provided.")
-        return (value_or_series - mean) / std
+    z = (value - mean) / std
+    print(f"Z-score: {z:.3f}")
+    return z
