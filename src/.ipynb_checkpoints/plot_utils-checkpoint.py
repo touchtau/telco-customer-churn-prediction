@@ -20,40 +20,14 @@ def plot_tenure_churn(df):
     plt.show()
 
 def plot_tenure_bands(df):
-    df['tenure_band'] = pd.cut(df['tenure'], bins=[0,12,24,48,72], 
-                           labels=['0-12','12-24','24-48','48-72'])
-    sns.countplot(x='tenure_band', hue='Churn', data=df)
-    plt.title("Churn by Tenure Bands")
-    plt.show()
-
-def plot_monthly_charges(df):
-    plt.figure(figsize=(10,6))
-    sns.histplot(data=df, x='MonthlyCharges', hue='Churn', bins=40, element="step", stat="density", common_norm=False)
-    plt.title("Distribution of Monthly Charges by Churn")
-    plt.xlabel("Monthly Charges")
-    plt.ylabel("Density")
-    plt.show()
-
-def plot_total_charges(df):
-    plt.figure(figsize=(10,6))
-    sns.histplot(data=df, x='TotalCharges', hue='Churn', bins=50, kde=False, element='step', alpha=0.6)
-    plt.title("Distribution of Total Charges by Churn")
-    plt.xlabel("Total Charges")
-    plt.ylabel("Number of Customers")
-    plt.show()
-
-def plot_payment_method(df):
-    sns.countplot(x='PaymentMethod', hue='Churn', data=df)
-    plt.xticks(rotation=45)
-    plt.title("Payment Method vs Churn")
-    plt.show()
-
-def plot_contract_payment_method(df):
-    pd.crosstab([df['Contract'], df['PaymentMethod']], df['Churn'], normalize='index') \
-   .plot(kind='bar', stacked=True, figsize=(12,6))
+    pd.crosstab([df['Contract'], df['PaymentMethod']], 
+                df['Churn'], 
+                normalize='index').plot(kind='bar', 
+                stacked=True, figsize=(12,6))
     plt.title("Churn by Contract and Payment Method")
     plt.ylabel("Proportion")
     plt.show()
+
 
 def plot_senior_citizens_pie(df):
     """Pie chart: proportion of senior citizens vs non-seniors."""
@@ -137,4 +111,3 @@ def plot_target_distribution(df, target_col='Churn'):
     plt.xlabel(target_col)
     plt.ylabel('Count')
     plt.show()
-
